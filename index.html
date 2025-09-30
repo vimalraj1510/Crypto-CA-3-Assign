@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caesar Cipher Encoder</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the interactive range input */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #10b981; /* Emerald 500 */
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(16, 185, 129, 0.7);
+            transition: background 0.3s;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: #374151; /* Gray 700 */
+            border-radius: 4px;
+        }
+
+        input[type="range"]:hover::-webkit-slider-thumb {
+            background: #059669; /* Emerald 600 on hover */
+        }
+        
+        /* Font setup */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+    <script>
+        // Main function to perform the Caesar Cipher
+        // This function works for both encryption (positive shift) and decryption (shift 26 - K)
+        function caesarCipher(text, shift) {
+            let result = '';
+            // Ensure the shift is within 0-25 range for simplicity
+            shift = shift % 26;
+
+            for (let i = 0; i < text.length; i++) {
+                let char = text[i];
+                let charCode = text.charCodeAt(i);
+
+                if (charCode >= 65 && charCode <= 90) { // Uppercase (A-Z)
+                    // (Current Code - 'A' base + Shift) % 26 + 'A' base
+                    let newCharCode = ((charCode - 65 + shift) % 26) + 65;
+                    result += String.fromCharCode(newCharCode);
+                } else if (charCode >= 97 && charCode <= 122) { // Lowercase (a-z)
+                    // (Current Code - 'a' base + Shift) % 26 + 'a' base
+                    let newCharCode = ((charCode - 97 + shift) % 26) + 97;
+                    result += String.fromCharCode(newCharCode);
+                } else {
+                    // Non-alphabetic characters remain unchanged
+                    result += char;
+                }
+            }
+            return result;
+        }
+
+        // Function to update the result (ciphertext or plaintext) in real-time
+        function updateResult() {
+            const textInput = document.getElementById('textInput');
+            const shiftElement = document.getElementById('shiftKey');
+            const shiftKey = parseInt(shiftElement.value, 10);
+            const resultOutput = document.getElementById('resultOutput');
+            const modeEncrypt = document.getElementById('modeEncrypt').checked;
+            
+            let effectiveShift;
+            
+            // Get UI elements for dynamic updating
+            const inputLabel = document.getElementById('textInputLabel');
+            const outputLabel = document.getElementById('resultOutputLabel');
+            const copyButton = document.getElementById('copyButton');
+
+            if (modeEncrypt) {
+                // Encryption: Effective shift is the key K
+                effectiveShift = shiftKey;
+                inputLabel.innerHTML = '2. Enter Text (<span class="text-white">Plaintext</span>)';
+                outputLabel.innerHTML = '4. Result (<span class="text-white">Ciphertext</span>)';
+                copyButton.textContent = 'Copy Ciphertext';
+
+            } else {
+                // Decryption: Effective shift is (26 - K)
+                effectiveShift = 26 - shiftKey;
+                inputLabel.innerHTML = '2. Enter Text (<span class="text-white">Ciphertext</span>)';
+                outputLabel.innerHTML = '4. Result (<span class="text-white">Plaintext</span>)';
+                copyButton.textContent = 'Copy Plaintext';
+            }
+
+            // Update the display for the shift key
+            document.getElementById('shiftValueDisplay').textContent = shiftKey;
+
+            if (isNaN(shiftKey) || shiftKey < 0 || shiftKey > 25) {
+                resultOutput.value = "Invalid Shift Key (0-25)";
+                return;
+            }
+
+            const result = caesarCipher(textInput.value, effectiveShift);
+            resultOutput.value = result;
+        }
+
+        // Set up event listeners once the page is fully loaded
+        window.onload = function() {
+            const textInput = document.getElementById('textInput');
+            const shiftKeyInput = document.getElementById('shiftKey');
+            
+            // Listen for changes in text and shift key to update output
+            textInput.addEventListener('input', updateResult);
+            shiftKeyInput.addEventListener('input', updateResult);
+
+            // Initial calculation on load
+            updateResult();
+        };
+
+        // Function to copy text to clipboard
+        function copyToClipboard() {
+            const output = document.getElementById('resultOutput');
+            output.select();
+            output.setSelectionRange(0, 99999); // For mobile devices
+
+            try {
+                document.execCommand('copy');
+                const copyButton = document.getElementById('copyButton');
+                copyButton.textContent = 'Copied!';
+                copyButton.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
+                copyButton.classList.add('bg-indigo-500');
+                
+                setTimeout(() => {
+                    // Reset button text based on current mode
+                    const modeEncrypt = document.getElementById('modeEncrypt').checked;
+                    copyButton.textContent = modeEncrypt ? 'Copy Ciphertext' : 'Copy Plaintext';
+                    copyButton.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+                    copyButton.classList.remove('bg-indigo-500');
+                }, 1500);
+
+            } catch (err) {
+                console.error('Copy failed: ', err);
+                // Fallback for environments where execCommand is blocked
+                const messageBox = document.getElementById('messageBox');
+                messageBox.textContent = 'Copying failed. Please copy manually.';
+                messageBox.classList.remove('hidden');
+                setTimeout(() => {
+                    messageBox.classList.add('hidden');
+                }, 3000);
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-4 sm:p-8 flex items-start justify-center">
+
+    <div class="w-full max-w-2xl bg-gray-800 p-6 sm:p-10 rounded-xl shadow-2xl border border-gray-700">
+        
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-emerald-400 mb-2">
+                Caesar Cipher Cryptographer
+            </h1>
+            <p class="text-gray-400 text-lg">Encrypt and Decrypt text using the classic shift cipher.</p>
+        </header>
+
+        <!-- Mode Selection Card -->
+        <div class="mb-8 p-6 bg-gray-700 rounded-lg shadow-lg">
+            <label class="block text-xl font-semibold mb-3 text-emerald-300">
+                1. Select Operation
+            </label>
+            <div class="flex space-x-6">
+                <label class="flex items-center text-lg cursor-pointer">
+                    <input type="radio" name="cipherMode" value="encrypt" id="modeEncrypt" checked class="h-5 w-5 text-emerald-500 border-gray-500 focus:ring-emerald-500" onchange="updateResult()">
+                    <span class="ml-2 font-medium text-white">Encrypt</span>
+                </label>
+                <label class="flex items-center text-lg cursor-pointer">
+                    <input type="radio" name="cipherMode" value="decrypt" id="modeDecrypt" class="h-5 w-5 text-emerald-500 border-gray-500 focus:ring-emerald-500" onchange="updateResult()">
+                    <span class="ml-2 font-medium text-white">Decrypt</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Text Input Card (Unified Input) -->
+        <div class="mb-8 p-6 bg-gray-700 rounded-lg shadow-lg">
+            <label for="textInput" id="textInputLabel" class="block text-xl font-semibold mb-3 text-emerald-300">
+                2. Enter Text (<span class="text-white">Plaintext</span>)
+            </label>
+            <textarea 
+                id="textInput" 
+                rows="5" 
+                class="w-full p-4 text-gray-100 bg-gray-900 border-2 border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 transition duration-300 placeholder-gray-500 resize-none"
+                placeholder="Type the message you want to process here."
+                onfocus="this.placeholder=''"
+                onblur="this.placeholder='Type the message you want to process here.'">The quick brown fox jumps over the lazy dog</textarea>
+        </div>
+
+        <!-- Shift Key Control Card -->
+        <div class="mb-10 p-6 bg-gray-700 rounded-lg shadow-lg">
+            <label for="shiftKey" class="block text-xl font-semibold mb-4 text-emerald-300">
+                3. Choose Shift Key (K): <span id="shiftValueDisplay" class="text-4xl font-bold ml-2 text-emerald-400">3</span>
+            </label>
+            <input 
+                type="range" 
+                id="shiftKey" 
+                min="0" 
+                max="25" 
+                value="3" 
+                class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer transition duration-300"
+            >
+            <div class="flex justify-between text-gray-400 mt-2 text-sm font-mono">
+                <span>K=0 (No Shift)</span>
+                <span>K=25</span>
+            </div>
+        </div>
+
+        <!-- Result Output Card (Unified Output) -->
+        <div class="p-6 bg-gray-700 rounded-lg shadow-lg relative">
+            <label for="resultOutput" id="resultOutputLabel" class="block text-xl font-semibold mb-3 text-emerald-300">
+                4. Result (<span class="text-white">Ciphertext</span>)
+            </label>
+            <textarea 
+                id="resultOutput" 
+                rows="5" 
+                readonly 
+                class="w-full p-4 text-gray-100 bg-gray-900 border-2 border-gray-600 rounded-lg selection:bg-emerald-900 placeholder-gray-500 resize-none"
+                placeholder="Your processed message will appear here."
+            ></textarea>
+            
+            <!-- Copy Button -->
+            <button 
+                id="copyButton"
+                onclick="copyToClipboard()" 
+                class="mt-4 w-full sm:w-auto px-6 py-3 bg-emerald-500 text-white font-bold rounded-lg shadow-md hover:bg-emerald-600 transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-emerald-500 focus:ring-opacity-50">
+                Copy Ciphertext
+            </button>
+        </div>
+        
+        <!-- Custom Message Box for Copy Feedback -->
+        <div id="messageBox" class="hidden fixed bottom-5 left-1/2 transform -translate-x-1/2 p-3 bg-red-600 text-white font-semibold rounded-lg shadow-xl z-50 transition duration-300">
+            <!-- Message text appears here -->
+        </div>
+
+    </div>
+
+</body>
+</html>
